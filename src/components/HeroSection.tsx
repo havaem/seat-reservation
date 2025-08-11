@@ -36,7 +36,7 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <div className="relative flex min-h-[calc(100vh-80px)] items-center justify-center py-6 md:py-8 lg:min-h-[740px] lg:py-10">
+    <section className="relative flex min-h-[calc(100vh-80px)] items-center justify-center py-6 md:py-8 lg:min-h-[620px] lg:py-10">
       <div className="bg-primary absolute inset-0 -z-10">
         <div className="bg-foreground absolute inset-0 opacity-70"></div>
         <Image
@@ -106,7 +106,7 @@ const HeroSection = () => {
           </Button>
         </motion.div>
       </motion.div>
-    </div>
+    </section>
   );
 };
 export default HeroSection;
