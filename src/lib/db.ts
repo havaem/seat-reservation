@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 
-let cached = (global as any).mongoose as { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null } | undefined;
+let cached = (global as any).mongoose as
+  | { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null }
+  | undefined;
 if (!cached) cached = (global as any).mongoose = { conn: null, promise: null };
 
 export async function dbConnect() {
