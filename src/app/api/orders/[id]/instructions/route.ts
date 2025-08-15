@@ -1,9 +1,11 @@
-import { Order, OrderDoc } from "@/models/Order";
 import { dbConnect } from "@/lib/db";
+import { Order } from "@/models/Order";
+import { NextRequest } from "next/server";
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest) {
   await dbConnect();
-  const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
   const ord = await Order.findById(id);
   if (!ord) return new Response("Not found", { status: 404 });
   return new Response(

@@ -91,6 +91,7 @@ function TypingText({
       }, delay);
       return () => clearTimeout(timeoutId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInView, delay, ...(animateOnChange ? [text] : [])]);
 
   React.useEffect(() => {
@@ -151,6 +152,7 @@ function TypingText({
     return () => {
       timeoutIds.forEach(clearTimeout);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, duration, started, loop, holdDelay]);
 
   return (

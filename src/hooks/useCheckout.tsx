@@ -130,6 +130,7 @@ export function useCheckout() {
   const remainingMs = useMemo(() => {
     const iso = order.current?.expiresAt ?? hold.current?.expiresAt;
     return iso ? Math.max(0, new Date(iso).getTime() - Date.now()) : 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
   const startHold = useCallback(async (seats: string[]) => {
