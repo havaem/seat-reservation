@@ -7,9 +7,9 @@ const MONGODB_URI =
 (async () => {
   await mongoose.connect(MONGODB_URI);
   const seats: SeatDoc[] = [];
-  for (let r = 0; r < 12; r++) {
+  for (let r = 0; r < 5; r++) {
     const row = String.fromCharCode(65 + r);
-    for (let c = 1; c <= 12; c++) {
+    for (let c = 1; c <= 7; c++) {
       const id = `${row}-${String(c).padStart(2, "0")}`;
       const tier = r < 3 ? "VIP" : "STD";
       seats.push({ seatId: id, tierCode: tier, status: "available" });

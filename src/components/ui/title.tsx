@@ -1,12 +1,16 @@
 import { PropsWithChildren } from "react";
 import { Typography } from "./typography";
+import { cn } from "@/lib/utils";
 
-const PageTitle: React.FC<PropsWithChildren> = ({ children }) => {
+type Props = PropsWithChildren<{
+  className?: string;
+}>;
+const PageTitle: React.FC<Props> = ({ children, className }) => {
   return (
     <div>
       <Typography
         type="h2"
-        className="text-white drop-shadow-md sm:text-4xl md:text-5xl"
+        className={cn(`drop-shadow-md sm:text-4xl md:text-5xl`, className)}
       >
         {children}
       </Typography>

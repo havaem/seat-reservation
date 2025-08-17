@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import CandidateItem from "./CandidateItem";
 import PageTitle from "./ui/title";
+import { section } from "motion/react-client";
 const CANDIDATES: ICandidate[] = [
   {
     name: "Thí sinh 1",
@@ -28,10 +29,7 @@ const CANDIDATES: ICandidate[] = [
 
 const Candidate = () => {
   return (
-    <section
-      className="to-secondary scroll-mt-20 bg-gradient-to-b from-[#4e131b]"
-      id="thi-sinh"
-    >
+    <section id="thi-sinh">
       <div className="flex min-h-[800px] flex-col items-center justify-center gap-16 px-4 py-10">
         <div className="text-primary-foreground space-y-4 text-center">
           {/* <PageTitle>4 Thí Sinh Xuất Sắc Nhất</PageTitle> */}
@@ -42,7 +40,7 @@ const Candidate = () => {
             transition={{ duration: 0.6 }}
             className="mx-auto max-w-3xl text-center"
           >
-            <PageTitle>
+            <PageTitle className="text-white">
               4 Thí Sinh Xuất Sắc –{" "}
               <span className="font-extrabold text-[#FFD39B]">
                 Bạn Sẽ Ủng Hộ Ai?
