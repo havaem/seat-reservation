@@ -3,37 +3,47 @@ import { EVENT } from "@/config/event";
 import { cn } from "@/lib/utils";
 import { SeatDoc } from "@/models/Seat";
 import { useEffect, useState } from "react";
+import { Button } from "./ui/button";
+import { useCheckout } from "@/hooks/useCheckout";
+import { code, em } from "motion/react-client";
 
 const BookAction = () => {
+  const {
+    step,
+    error,
+    remainingMs,
+    bank,
+    startHold,
+    placeOrder,
+    refreshInstructions,
+  } = useCheckout();
+
   const [pricingTiers, setPricingTiers] = useState<typeof EVENT.pricingTiers>(
     [],
   );
   const [seats, setSeats] = useState<SeatDoc[]>([]);
   const [choosenSeats, setChoosenSeats] = useState<string[]>([]);
-
-  const fetchData = async () => {
+  const fetchSeatData = async () => {
     const response = await fetch("/api/seatmap");
     const data = await response.json();
     setPricingTiers(data.pricingTiers);
     setSeats(data.seats);
   };
 
-  const renderClassNameColorSeat = (tier: string, status: string) => {
+  const renderClassNameColorSeat = (status: string) => {
     let className = "";
-    switch (tier) {
-      case "VIP":
-        className = "bg-accent text-accent-foreground";
+    switch (status) {
+      case "available":
+        className = "bg-white";
         break;
-      case "STD":
-        className = "bg-secondary text-secondary-foreground";
+      case "held":
+        className = "bg-purple-200";
+        break;
+      case "reserved":
+        className = "bg-gray-600";
+        break;
       default:
         break;
-    }
-    if (status === "held") {
-      className = "bg-purple-200";
-    }
-    if (status === "reserved") {
-      className = "bg-gray-600";
     }
     return className;
   };
@@ -46,7 +56,7 @@ const BookAction = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchSeatData();
   }, []);
 
   return (
@@ -55,14 +65,13 @@ const BookAction = () => {
         {pricingTiers.map((tier) => (
           <div
             key={tier.code}
-            className="flex items-center gap-2 rounded-md bg-white p-2"
+            className={cn(
+              "flex items-center gap-2 rounded-md p-2",
+              tier.code === "VIP"
+                ? "bg-secondary text-secondary-foreground"
+                : "bg-white",
+            )}
           >
-            <div
-              className={cn(
-                "size-6 rounded-md",
-                renderClassNameColorSeat(tier.code, "available"),
-              )}
-            ></div>
             <div>
               <span className="mr-2">{tier.name}</span>
               <span className="text-sm font-bold">{tier.price} đ</span>
@@ -71,20 +80,29 @@ const BookAction = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-12 gap-4">
+      <div className="grid grid-cols-10 gap-4">
         {seats.map((seat) => (
           <button
             key={seat.seatId}
             className={cn(
               "col-span-1 flex items-center justify-center rounded-md border-2 border-transparent px-1 py-2 text-xs font-bold",
-              renderClassNameColorSeat(seat.tierCode, seat.status),
+              renderClassNameColorSeat(seat.status),
               choosenSeats.includes(seat.seatId) && "border-primary",
             )}
             onClick={() => handleChooseSeat(seat.seatId)}
+            disabled={seat.status !== "available"}
           >
             {seat.seatId}
           </button>
         ))}
+      </div>
+      <div>
+        {choosenSeats.length === 0 && (
+          <p className="text-sm">Vui lòng chọn ghế để đặt vé</p>
+        )}
+        <Button className="w-full" disabled={choosenSeats.length === 0}>
+          Đặt vé
+        </Button>
       </div>
     </div>
   );

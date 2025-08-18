@@ -5,7 +5,6 @@ import { withIdempotency } from "@/lib/idempotency";
 import { makeBankContent } from "@/lib/utils";
 import { Hold } from "@/models/Hold";
 import { Order } from "@/models/Order";
-import { Seat } from "@/models/Seat";
 import {
   OrderCreateRequestSchema,
   OrderCreateResponseSchema,
@@ -25,12 +24,30 @@ export async function POST(req: Request) {
         status: 410,
       });
 
-    const seats = await Seat.find({ seatId: { $in: hold.seatIds } });
+    const seatSet = new Set(hold.seatIds);
+    if (
+      body.items.length !== hold.seatIds.length ||
+      body.items.some((i) => !seatSet.has(i.seatId))
+    ) {
+      return new Response(
+        JSON.stringify({
+          code: "BAD_REQUEST",
+          message: "items phải phủ đủ ghế của hold",
+        }),
+        { status: 400 },
+      );
+    }
+    // validate tierCode tồn tại
     const priceByCode = new Map(
       EVENT.pricingTiers.map((t) => [t.code, t.price] as const),
     );
-    const amount = seats.reduce(
-      (sum, s) => sum + (priceByCode.get(s.tierCode) || 0),
+    const items = body.items.map((i) => {
+      const p = priceByCode.get(i.tierCode);
+      if (!p) throw new Error("INVALID_TIER");
+      return { seatId: i.seatId, tierCode: i.tierCode, unitPrice: p };
+    });
+    const amount = body.items.reduce(
+      (sum, it) => sum + (priceByCode.get(it.tierCode) || 0),
       0,
     );
 
@@ -48,6 +65,7 @@ export async function POST(req: Request) {
       _id: orderId,
       seatIds: hold.seatIds,
       amount,
+      items,
       bankContent,
       buyer: body.buyer,
       method: "manual_bank",

@@ -2,7 +2,6 @@ import { Schema, model, models } from "mongoose";
 
 export interface SeatDoc {
   seatId: string;
-  tierCode: "VIP" | "STD";
   status: "available" | "held" | "reserved";
   holdId?: string | null;
   orderId?: string | null;
@@ -10,7 +9,6 @@ export interface SeatDoc {
 
 const SeatSchema = new Schema<SeatDoc>({
   seatId: { type: String, unique: true, index: true, required: true },
-  tierCode: { type: String, index: true, required: true },
   status: {
     type: String,
     enum: ["available", "held", "reserved"],

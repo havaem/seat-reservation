@@ -25,20 +25,8 @@ const Page = () => {
     setSeats(data.seats);
   };
 
-  const renderClassNameColorSeat = (
-    tier: SeatDoc["tierCode"],
-    status: SeatDoc["status"],
-  ) => {
+  const renderClassNameColorSeat = (status: SeatDoc["status"]) => {
     let className = "";
-    switch (tier) {
-      case "VIP":
-        className = "bg-accent";
-        break;
-      case "STD":
-        className = "bg-secondary";
-      default:
-        break;
-    }
     if (status === "held") {
       className = "bg-purple-200";
     }
@@ -67,6 +55,11 @@ const Page = () => {
 
   useEffect(() => {
     fetchData();
+    window.addEventListener("beforeunload", (event) => {
+      event.preventDefault();
+      navigator.sendBeacon("/api/log", JSON.stringify({ msg: "bye" }));
+      event.returnValue = "";
+    });
   }, []);
 
   useEffect(() => {
@@ -92,7 +85,7 @@ const Page = () => {
                 key={seat.seatId}
                 className={cn(
                   "col-span-1 flex items-center justify-center rounded-md border-2 border-transparent px-2 py-3",
-                  renderClassNameColorSeat(seat.tierCode, seat.status),
+                  renderClassNameColorSeat(seat.status),
                   choosenSeats.includes(seat.seatId) && "border-primary",
                 )}
                 onClick={() => handleChooseSeat(seat.seatId)}

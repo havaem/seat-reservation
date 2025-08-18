@@ -7,6 +7,10 @@ export const HoldCreateResponseSchema = z.object({
   seats: z.array(z.string()),
   expiresAt: z.string(),
 });
+export const OrderItemSchema = z.object({
+  seatId: z.string().min(1),
+  tierCode: z.string().min(1),
+});
 export const OrderCreateRequestSchema = z.object({
   holdId: z.string(),
   method: z.literal("manual_bank"),
@@ -15,6 +19,7 @@ export const OrderCreateRequestSchema = z.object({
     phone: z.string().min(6),
     email: z.string().email().optional(),
   }),
+  items: z.array(OrderItemSchema).nonempty(),
 });
 export const OrderCreateResponseSchema = z.object({
   orderId: z.string(),

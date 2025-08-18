@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { get, post } from "@/config/axios";
+import { OrderItem } from "@/models/Order";
 
 /** Schemas tối thiểu để parse response */
 const HoldRes = z.object({
@@ -45,11 +46,12 @@ export async function createHold(seats: string[], idemKey: string) {
 export async function createOrder(
   holdId: string,
   buyer: { fullName: string; phone: string; email?: string },
+  items: OrderItem[],
   idemKey: string,
 ) {
   const data = await post(
     "/api/orders",
-    { holdId, method: "manual_bank", buyer },
+    { holdId, method: "manual_bank", buyer, items },
     {
       headers: {
         "Idempotency-Key": idemKey,

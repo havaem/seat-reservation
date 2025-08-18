@@ -5,6 +5,7 @@ import {
   uploadProof,
 } from "@/app/apiClient";
 import { idemp } from "@/lib/idemClient";
+import { OrderItem } from "@/models/Order";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Buyer = { fullName: string; phone: string; email?: string };
@@ -150,7 +151,7 @@ export function useCheckout() {
     }
   }, []);
 
-  const placeOrder = useCallback(async (buyer: Buyer) => {
+  const placeOrder = useCallback(async (buyer: Buyer, items: OrderItem[]) => {
     if (!hold.current) throw new Error("Missing hold");
     setError(null);
     try {

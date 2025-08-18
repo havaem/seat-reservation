@@ -1,8 +1,10 @@
 import { Schema, model, models } from "mongoose";
 
+export type OrderItem = { seatId: string; tierCode: string };
 export interface OrderDoc {
   _id: string;
   seatIds: string[];
+  items: OrderItem[];
   amount: number;
   bankContent: string;
   buyer: { fullName: string; email?: string; phone: string };
@@ -20,6 +22,7 @@ const OrderSchema = new Schema<OrderDoc>(
   {
     _id: { type: String, required: true },
     seatIds: [{ type: String, required: true }],
+    items: [{ seatId: String, tierCode: String }],
     amount: { type: Number, required: true },
     bankContent: { type: String, unique: true, index: true, required: true },
     buyer: {
