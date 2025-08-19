@@ -30,7 +30,7 @@ export async function POST(req: Request) {
         );
         await session.abortTransaction();
         session.endSession();
-        return new Response(JSON.stringify({ code: "cayyyy" }), {
+        return new Response(JSON.stringify({ code: "SEAT_ALREADY_HELD" }), {
           status: 409,
           headers: { "content-type": "application/json" },
         });

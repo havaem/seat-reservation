@@ -17,7 +17,6 @@ const STORAGE_KEYS = {
   BANK_INFO: "checkout_bank_info",
 } as const;
 
-// Helper functions for localStorage
 const saveToStorage = (key: string, value: unknown) => {
   try {
     if (typeof window !== "undefined") {
@@ -52,6 +51,7 @@ const removeFromStorage = (key: string) => {
 };
 
 export function useCheckout() {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [step, setStep] = useState<"select" | "holding" | "pay" | "done">(
     "select",
   );
@@ -135,6 +135,7 @@ export function useCheckout() {
   }, [step]);
 
   const startHold = useCallback(async (seats: string[]) => {
+    setIsLoading(true);
     setError(null);
     setStep("holding");
     try {
@@ -148,16 +149,20 @@ export function useCheckout() {
       setError((e as { code?: string })?.code || "Giữ chỗ thất bại");
       setStep("select");
       throw e;
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
   const placeOrder = useCallback(async (buyer: Buyer, items: OrderItem[]) => {
     if (!hold.current) throw new Error("Missing hold");
+    setIsLoading(true);
     setError(null);
     try {
       const res = await createOrder(
         hold.current.holdId,
         buyer,
+        items,
         idemp.get("order"),
       );
       idemp.clear("order");
@@ -177,6 +182,8 @@ export function useCheckout() {
     } catch (e: unknown) {
       setError((e as { code?: string })?.code || "Tạo đơn thất bại");
       throw e;
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -202,6 +209,7 @@ export function useCheckout() {
   }, []);
 
   return {
+    isLoading,
     step,
     error,
     remainingMs,
