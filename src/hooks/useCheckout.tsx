@@ -6,7 +6,7 @@ import {
 } from "@/app/apiClient";
 import { idemp } from "@/lib/idemClient";
 import { OrderItem } from "@/models/Order";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Buyer = { fullName: string; phone: string; email?: string };
 
@@ -50,22 +50,23 @@ const removeFromStorage = (key: string) => {
   }
 };
 
+export type TCheckoutStep = "select" | "holding" | "pay" | "done";
+export type TBankInfo = {
+  content: string;
+  amount: number;
+  accountName: string;
+  accountNumber: string;
+  bank: string;
+};
+
 export function useCheckout() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [step, setStep] = useState<"select" | "holding" | "pay" | "done">(
-    "select",
-  );
+  const [step, setStep] = useState<TCheckoutStep>("select");
   const [error, setError] = useState<string | null>(null);
 
   const hold = useRef<{ holdId: string; expiresAt: string } | null>(null);
   const order = useRef<{ orderId: string; expiresAt: string } | null>(null);
-  const bank = useRef<{
-    content: string;
-    amount: number;
-    accountName: string;
-    accountNumber: string;
-    bank: string;
-  } | null>(null);
+  const bank = useRef<TBankInfo | null>(null);
 
   const clearStoredOrder = useCallback(() => {
     removeFromStorage(STORAGE_KEYS.ORDER_ID);
@@ -128,11 +129,10 @@ export function useCheckout() {
     }
   }, [clearStoredOrder, refreshInstructionsFromStorage]);
 
-  const remainingMs = useMemo(() => {
+  const getRemainingMs = useCallback(() => {
     const iso = order.current?.expiresAt ?? hold.current?.expiresAt;
     return iso ? Math.max(0, new Date(iso).getTime() - Date.now()) : 0;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+  }, []);
 
   const startHold = useCallback(async (seats: string[]) => {
     setIsLoading(true);
@@ -212,7 +212,7 @@ export function useCheckout() {
     isLoading,
     step,
     error,
-    remainingMs,
+    getRemainingMs,
     hold: hold.current,
     order: order.current,
     bank: bank.current,

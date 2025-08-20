@@ -1,11 +1,11 @@
 "use client";
 import { useCheckout } from "@/hooks/useCheckout";
+import useReady from "@/hooks/useReady";
 import { cn } from "@/lib/utils";
 import { renderClassNameColorSeat } from "@/utils/renderClassnameSeat";
 import { useState } from "react";
 import SeatItem from "./SeatItem";
 import { Button } from "./ui/button";
-import useReady from "@/hooks/useReady";
 import UserInputData from "./UserInputData";
 
 const BookAction = () => {
@@ -14,7 +14,7 @@ const BookAction = () => {
     isLoading,
     step,
     error,
-    remainingMs,
+    getRemainingMs,
     bank,
     startHold,
     placeOrder,
@@ -22,6 +22,7 @@ const BookAction = () => {
   } = useCheckout();
 
   const [choosenSeats, setChoosenSeats] = useState<string[]>([]);
+  const [isOpenDialog, setIsOpenDialog] = useState<boolean>(false);
 
   const handleChooseSeat = (seatId: string) => {
     const newChoosenSeats = choosenSeats.includes(seatId)
@@ -33,6 +34,7 @@ const BookAction = () => {
   const handleHold = async () => {
     try {
       await startHold(choosenSeats);
+      setIsOpenDialog(true);
     } catch (error) {
       refetch();
       setChoosenSeats([]);
@@ -42,7 +44,17 @@ const BookAction = () => {
 
   return (
     <div className="space-y-4">
-      <UserInputData chooseSeats={choosenSeats} />
+      <UserInputData
+        chooseSeats={choosenSeats}
+        isLoading={isLoading}
+        open={isOpenDialog}
+        onOpenChange={setIsOpenDialog}
+        placeOrder={placeOrder}
+        step={step}
+        bankInfo={bank}
+        getRemainingMs={getRemainingMs}
+        refreshInstructions={refreshInstructions}
+      />
       <div className="flex justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
