@@ -3,6 +3,7 @@ import { Schema, model, models } from "mongoose";
 import { dbConnect } from "./db";
 import crypto from "crypto";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonObject = Record<string, any>;
 
 const IDEMP_HEADER = "Idempotency-Key";
