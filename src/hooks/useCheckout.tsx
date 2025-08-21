@@ -62,7 +62,6 @@ export type TBankInfo = {
 export function useCheckout() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [step, setStep] = useState<TCheckoutStep>("select");
-  const [error, setError] = useState<string | null>(null);
 
   const hold = useRef<{ holdId: string; expiresAt: string } | null>(null);
   const order = useRef<{ orderId: string; expiresAt: string } | null>(null);
@@ -136,7 +135,6 @@ export function useCheckout() {
 
   const startHold = useCallback(async (seats: string[]) => {
     setIsLoading(true);
-    setError(null);
     setStep("holding");
     try {
       const res = await createHold(seats, idemp.get("hold"));
@@ -145,8 +143,6 @@ export function useCheckout() {
       setStep("pay");
       return res;
     } catch (e: unknown) {
-      // e.code có thể là "SEAT_ALREADY_HELD"
-      setError((e as { code?: string })?.code || "Giữ chỗ thất bại");
       setStep("select");
       throw e;
     } finally {
@@ -157,7 +153,6 @@ export function useCheckout() {
   const placeOrder = useCallback(async (buyer: Buyer, items: OrderItem[]) => {
     if (!hold.current) throw new Error("Missing hold");
     setIsLoading(true);
-    setError(null);
     try {
       const res = await createOrder(
         hold.current.holdId,
@@ -180,7 +175,6 @@ export function useCheckout() {
       setStep("done");
       return res;
     } catch (e: unknown) {
-      setError((e as { code?: string })?.code || "Tạo đơn thất bại");
       throw e;
     } finally {
       setIsLoading(false);
@@ -211,7 +205,6 @@ export function useCheckout() {
   return {
     isLoading,
     step,
-    error,
     getRemainingMs,
     hold: hold.current,
     order: order.current,

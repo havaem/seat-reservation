@@ -8,7 +8,6 @@ import Clock from "./Clock";
 import heroImage from "./hero.jpg";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
-import { useCallback } from "react";
 
 const eventInfo = [
   {
@@ -30,11 +29,6 @@ const eventInfo = [
 ];
 
 const HeroSection = () => {
-  const handleScrollToThiSinh = useCallback(() => {
-    const el = document.getElementById("thi-sinh");
-    if (el) el.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
   return (
     <section className="relative flex min-h-[calc(100vh-80px)] items-center justify-center py-6 md:py-8 lg:min-h-[620px] lg:py-10">
       <div className="bg-primary absolute inset-0 -z-10">
@@ -99,10 +93,12 @@ const HeroSection = () => {
           <Button
             variant="secondary"
             className="rounded-none py-8 text-2xl font-bold uppercase transition-all hover:scale-120 hover:brightness-110"
-            onClick={handleScrollToThiSinh}
+            asChild
           >
-            <Fingerprint className="mr-2 inline-block h-10 w-10" />
-            Đặt vé ngay
+            <a href="#dat-ve">
+              <Fingerprint className="mr-2 inline-block h-10 w-10" />
+              Đặt vé ngay
+            </a>
           </Button>
         </motion.div>
       </motion.div>

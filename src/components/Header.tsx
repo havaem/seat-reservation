@@ -5,10 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "./ui/button";
 
-const NAVIGATION_LINKS = [
-  { href: "#thi-sinh", label: "Thí Sinh" },
-  { href: "#dia-diem", label: "Địa Điểm" },
-];
+const NAVIGATION_LINKS = [{ href: "#thi-sinh", label: "Thí Sinh" }];
 
 const Header = () => {
   const [isOpenMobileMenu, setIsOpenMobileMenu] = useState(false);
@@ -62,8 +59,12 @@ const Header = () => {
               {link.label}
             </Link>
           ))}
-          <Button size="lg" className="w-full text-lg font-bold uppercase">
-            Đặt vé ngay
+          <Button
+            size="lg"
+            className="w-full text-lg font-bold uppercase"
+            asChild
+          >
+            <a href="#dat-ve">Đặt vé ngay</a>
           </Button>
         </div>
       )}
@@ -93,8 +94,8 @@ const Header = () => {
               {link.label}
             </Link>
           ))}
-          <Button size="lg" className="text-lg font-bold uppercase">
-            Đặt vé ngay
+          <Button size="lg" className="text-lg font-bold uppercase" asChild>
+            <a href="#dat-ve">Đặt vé ngay</a>
           </Button>
         </nav>
       </div>

@@ -16,14 +16,10 @@ export function normalizeVN(str: string) {
     .trim()
     .toUpperCase();
 }
-export function makeBankContent(
-  eventCode: string,
-  orderId: string,
-  buyerName: string,
-) {
+export function makeBankContent(orderId: string, buyerName: string) {
   const short = toShortId(orderId);
   const last = normalizeVN(buyerName.split(" ").slice(-1)[0])
     .replace(/\s/g, "")
     .slice(0, 12);
-  return `${eventCode} ORD${short} ${last}`.slice(0, 30);
+  return `ORD${short} ${last}`.slice(0, 30);
 }

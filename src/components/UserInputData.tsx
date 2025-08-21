@@ -5,7 +5,7 @@ import { OrderItem } from "@/models/Order";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ComponentProps, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import z from "zod";
+import z, { email } from "zod";
 import OrderItemAction from "./OrderItemAction";
 import { Button } from "./ui/button";
 import {
@@ -27,6 +27,8 @@ import {
 } from "./ui/form";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { getErrorMessage } from "@/utils/getErrorMessage";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   fullName: z
@@ -50,11 +52,14 @@ const formSchema = z.object({
 
 type Props = ComponentProps<typeof Dialog> & {
   chooseSeats: string[];
-  placeOrder: (values: z.infer<typeof formSchema>, order: OrderItem[]) => void;
+  placeOrder: (
+    values: z.infer<typeof formSchema>,
+    order: OrderItem[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) => Promise<any>;
   step: TCheckoutStep;
   bankInfo: TBankInfo | null;
   getRemainingMs: () => number;
-  refreshInstructions: () => void;
   isLoading: boolean;
 };
 const UserInputData: React.FC<Props> = ({
@@ -63,8 +68,8 @@ const UserInputData: React.FC<Props> = ({
   step,
   bankInfo,
   getRemainingMs,
-  refreshInstructions,
   isLoading,
+  onOpenChange,
   ...props
 }) => {
   const [order, setOrder] = useState<OrderItem[]>([]);
@@ -79,8 +84,22 @@ const UserInputData: React.FC<Props> = ({
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    placeOrder(values, order);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      await placeOrder(values, order);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      toast.error(getErrorMessage(error?.code));
+      console.log(error);
+      onOpenChange?.(false);
+    }
+  }
+
+  function handlePaid() {
+    toast.success(
+      "Chúng tôi sẽ xác nhận thanh toán và sẽ tiến hành gửi thông tin đặt vé đến email của bạn.",
+    );
+    onOpenChange?.(false);
   }
 
   const handleTierChange = (seatId: string, newTierCode: string) => {
@@ -128,7 +147,7 @@ const UserInputData: React.FC<Props> = ({
   }, [chooseSeats]);
 
   return (
-    <Dialog {...props}>
+    <Dialog {...props} onOpenChange={onOpenChange}>
       <DialogContent
         className="sm:max-w-[425px]"
         onInteractOutside={(e) => {
@@ -146,7 +165,7 @@ const UserInputData: React.FC<Props> = ({
               </DialogHeader>
               <div className="grid gap-4">
                 <Label htmlFor="seats">Chỗ ngồi đã giữ</Label>
-                <div className="space-y-2">
+                <div className="max-h-52 space-y-2 overflow-y-auto">
                   {order.map((item) => (
                     <OrderItemAction
                       key={item.seatId}
@@ -219,7 +238,7 @@ const UserInputData: React.FC<Props> = ({
                 <DialogClose asChild>
                   <Button variant="outline">Hủy</Button>
                 </DialogClose>
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" loading={isLoading}>
                   Xác nhận
                 </Button>
               </DialogFooter>
@@ -235,7 +254,7 @@ const UserInputData: React.FC<Props> = ({
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
-              <h3 className="font-semibold">
+              <p className="font-semibold">
                 Chuyển khoản trong:{" "}
                 {(() => {
                   const hours = Math.floor(remainingTime / 3600);
@@ -243,30 +262,41 @@ const UserInputData: React.FC<Props> = ({
                   const seconds = Math.floor(remainingTime % 60);
                   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
                 })()}
-              </h3>
+              </p>
               <ul className="text-sm">
                 <li>
                   Ngân hàng: <b>{bankInfo.bank}</b>
                 </li>
                 <li>
-                  Số tài khoản: <b>{bankInfo.accountNumber}</b> (CTK:{" "}
-                  {bankInfo.accountName})
+                  Số tài khoản: <b>{bankInfo.accountNumber}</b>
                 </li>
                 <li>
-                  Nội dung: <code className="text-xl">{bankInfo.content}</code>
+                  Chủ tài khoản: <b>{bankInfo.accountName}</b>
                 </li>
                 <li>
-                  Số tiền: <b>{bankInfo.amount.toLocaleString()}đ</b>
+                  Nội dung:{" "}
+                  <code className="bg-amber-100 text-xl">
+                    {bankInfo.content}
+                  </code>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="ml-2"
+                    onClick={() => {
+                      navigator.clipboard.writeText(bankInfo.content);
+                      toast.success("Đã sao chép nội dung!");
+                    }}
+                  >
+                    Sao chép
+                  </Button>
+                </li>
+                <li>
+                  Số tiền:{" "}
+                  <b className="bg-amber-100 text-lg">
+                    {bankInfo.amount.toLocaleString()}đ
+                  </b>
                 </li>
               </ul>
-
-              <Button
-                variant="secondary"
-                onClick={refreshInstructions}
-                className="btn"
-              >
-                Làm mới hướng dẫn
-              </Button>
               <p className="text-xs text-gray-500">
                 * Nếu quá thời gian, đơn sẽ tự hủy. Bạn có thể đặt lại.
               </p>
@@ -275,7 +305,9 @@ const UserInputData: React.FC<Props> = ({
               <DialogClose asChild>
                 <Button variant="outline">Hủy</Button>
               </DialogClose>
-              <Button disabled={isLoading}>Đã thanh toán</Button>
+              <Button loading={isLoading} onClick={handlePaid}>
+                Đã thanh toán
+              </Button>
             </DialogFooter>
           </>
         )}

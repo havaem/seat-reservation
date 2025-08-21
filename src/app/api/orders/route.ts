@@ -52,11 +52,7 @@ export async function POST(req: Request) {
     );
 
     const orderId = new mongoose.Types.ObjectId().toString();
-    const bankContent = makeBankContent(
-      EVENT.code,
-      orderId,
-      body.buyer.fullName,
-    );
+    const bankContent = makeBankContent(orderId, body.buyer.fullName);
 
     const ttlMin = parseInt(process.env.ORDER_TTL_MIN || "30");
     const expiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
