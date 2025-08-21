@@ -10,12 +10,13 @@ export interface OrderDoc {
   buyer: { fullName: string; email?: string; phone: string };
   method: "manual_bank";
   status: "pending_offline" | "paid_offline" | "cancelled" | "expired";
-  expiresAt: Date;
-  paidAt?: Date;
+  expiresAt: string | Date;
+  paidAt?: string | Date;
   reviewedBy?: string;
-  reviewedAt?: Date;
+  reviewedAt?: string | Date;
   reviewNote?: string;
   paidAmount?: number;
+  createdAt: string | Date;
 }
 
 const OrderSchema = new Schema<OrderDoc>(
