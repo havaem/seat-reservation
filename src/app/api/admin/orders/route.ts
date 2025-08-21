@@ -25,7 +25,8 @@ export async function GET(request: Request) {
         { "buyer.fullName": { $regex: search, $options: "i" } },
         { "buyer.email": { $regex: search, $options: "i" } },
         { "buyer.phone": { $regex: search, $options: "i" } },
-        { orderId: { $regex: search, $options: "i" } },
+        { bankContent: { $regex: search, $options: "i" } },
+        { _id: { $regex: search, $options: "i" } },
       ];
     }
 
@@ -81,7 +82,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const order = await Order.findOne({ orderId });
+    const order = await Order.findOne({ _id: orderId });
     if (!order) {
       return NextResponse.json(
         { error: "Không tìm thấy đơn hàng" },
