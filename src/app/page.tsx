@@ -1,4 +1,7 @@
+"use client";
+
 import AudienceBenefits from "@/components/AudienceBenefits";
+import BookingStatusBanner from "@/components/BookingStatusBanner";
 import Candidate from "@/components/Candidate";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
@@ -9,6 +12,7 @@ export default function Home() {
   return (
     <>
       <Header />
+      <BookingStatusBanner />
       <HeroSection />
       <div className="to-secondary scroll-mt-20 bg-gradient-to-b from-[#4e131b]">
         <Candidate />

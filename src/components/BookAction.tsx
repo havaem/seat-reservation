@@ -1,5 +1,6 @@
 "use client";
 import { useCheckout } from "@/hooks/useCheckout";
+import { useBookingStatus } from "@/hooks/useBookingStatus";
 import useReady from "@/hooks/useReady";
 import { cn } from "@/lib/utils";
 import { renderClassNameColorSeat } from "@/utils/renderClassnameSeat";
@@ -14,6 +15,7 @@ const BookAction = () => {
   const { isLoading: isLoadingSeat, pricingTiers, seats, refetch } = useReady();
   const { isLoading, step, getRemainingMs, bank, startHold, placeOrder } =
     useCheckout();
+  const { maxSeatsPerOrder } = useBookingStatus();
 
   const [choosenSeats, setChoosenSeats] = useState<string[]>([]);
   const [isOpenDialog, setIsOpenDialog] = useState<boolean>(false);
@@ -22,6 +24,13 @@ const BookAction = () => {
     const newChoosenSeats = choosenSeats.includes(seatId)
       ? choosenSeats.filter((id) => id !== seatId)
       : [...choosenSeats, seatId];
+
+    // Check max seats limit
+    if (newChoosenSeats.length > maxSeatsPerOrder) {
+      toast.error(`Chỉ được chọn tối đa ${maxSeatsPerOrder} ghế mỗi lần`);
+      return;
+    }
+
     setChoosenSeats(newChoosenSeats);
   };
 
@@ -130,16 +139,32 @@ const BookAction = () => {
       </div>
 
       <div>
-        {choosenSeats.length === 0 && (
-          <p className="text-sm">Vui lòng chọn ghế để đặt vé</p>
-        )}
+        <div className="mb-4 space-y-2">
+          {choosenSeats.length === 0 ? (
+            <p className="text-sm">Vui lòng chọn ghế để đặt vé</p>
+          ) : (
+            <>
+              <p className="text-sm">
+                Đã chọn:{" "}
+                <span className="font-medium">{choosenSeats.length}</span> /{" "}
+                {maxSeatsPerOrder} ghế
+              </p>
+              <p className="rounded-md bg-white p-2 text-xs">
+                Ghế: {choosenSeats.join(", ")}
+              </p>
+            </>
+          )}
+          <p className="text-xs">
+            * Tối đa {maxSeatsPerOrder} ghế mỗi đơn hàng
+          </p>
+        </div>
         <Button
           className="w-full"
           disabled={choosenSeats.length === 0}
           loading={isLoading}
           onClick={handleHold}
         >
-          Đặt vé
+          Đặt vé ({choosenSeats.length} ghế)
         </Button>
       </div>
     </div>

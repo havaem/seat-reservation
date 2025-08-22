@@ -27,7 +27,7 @@ export async function GET() {
       Order.countDocuments({ status: "cancelled" }),
       Order.aggregate([
         { $match: { status: "paid_offline" } },
-        { $group: { _id: null, total: { $sum: "$total" } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]).then((result) => result[0]?.total || 0),
       Seat.countDocuments(),
       Seat.countDocuments({ status: "available" }),

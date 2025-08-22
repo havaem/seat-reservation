@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { OrderDoc } from "@/models/Order";
@@ -19,7 +20,22 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-
+import useDebounce from "@/hooks/useDebounce";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
 interface OrdersResponse {
   orders: OrderDoc[];
   pagination: {
@@ -49,10 +65,21 @@ export default function OrderManagement() {
   const [selectedOrder, setSelectedOrder] = useState<OrderDoc | null>(null);
   const [reviewNote, setReviewNote] = useState("");
 
+  // Debounce search để giảm bớt gọi API
+  const debouncedSearch = useDebounce(search, 500);
+
+  // Reset về trang 1 khi search hoặc filter thay đổi
+  useEffect(() => {
+    if (pagination.page !== 1) {
+      setPagination((prev) => ({ ...prev, page: 1 }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, statusFilter]);
+
   useEffect(() => {
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, search, statusFilter]);
+  }, [pagination.page, debouncedSearch, statusFilter]);
 
   const fetchOrders = async () => {
     try {
@@ -60,7 +87,7 @@ export default function OrderManagement() {
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
-        ...(search && { search }),
+        ...(debouncedSearch && { search: debouncedSearch }),
         ...(statusFilter !== "all" && { status: statusFilter }),
       });
 
@@ -112,17 +139,17 @@ export default function OrderManagement() {
     const statusConfig = {
       pending_offline: {
         label: "Chờ xử lý",
-        color: "bg-yellow-100 text-yellow-800",
+        variant: "secondary" as const,
         icon: Clock,
       },
       paid_offline: {
         label: "Đã thanh toán",
-        color: "bg-green-100 text-green-800",
+        variant: "default" as const,
         icon: CheckCircle,
       },
       cancelled: {
         label: "Đã hủy",
-        color: "bg-red-100 text-red-800",
+        variant: "destructive" as const,
         icon: XCircle,
       },
     };
@@ -133,12 +160,10 @@ export default function OrderManagement() {
     const Icon = config.icon;
 
     return (
-      <span
-        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${config.color}`}
-      >
-        <Icon className="mr-1 h-3 w-3" />
+      <Badge variant={config.variant} className="gap-1">
+        <Icon className="h-3 w-3" />
         {config.label}
-      </span>
+      </Badge>
     );
   };
 
@@ -165,29 +190,37 @@ export default function OrderManagement() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="relative">
-              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-              <Input
-                placeholder="Tìm kiếm theo tên, email, SĐT, mã đơn..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+          <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                <Input
+                  placeholder="Tìm kiếm theo tên, email, SĐT..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pr-10 pl-10"
+                />
+                {search && search !== debouncedSearch && (
+                  <div className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 transform">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#f88134] border-t-transparent" />
+                  </div>
+                )}
+              </div>
 
-            <div className="relative">
-              <Filter className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full rounded-md border border-gray-300 py-2 pr-3 pl-10 focus:border-transparent focus:ring-2 focus:ring-[#f88134] focus:outline-none"
-              >
-                <option value="all">Tất cả trạng thái</option>
-                <option value="pending_offline">Chờ xử lý</option>
-                <option value="paid_offline">Đã thanh toán</option>
-                <option value="cancelled">Đã hủy</option>
-              </select>
+              <div className="relative">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <Filter className="h-4 w-4 transform text-gray-400" />
+                    <SelectValue placeholder="Tất cả trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                    <SelectItem value="pending_offline">Chờ xử lý</SelectItem>
+                    <SelectItem value="paid_offline">Đã thanh toán</SelectItem>
+                    <SelectItem value="cancelled">Đã hủy</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="flex items-center text-sm text-gray-600">
@@ -215,125 +248,104 @@ export default function OrderManagement() {
               Không tìm thấy đơn hàng nào
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="p-3 text-left font-medium text-gray-700">
-                      Mã đơn
-                    </th>
-                    <th className="p-3 text-left font-medium text-gray-700">
-                      Khách hàng
-                    </th>
-                    <th className="p-3 text-left font-medium text-gray-700">
-                      Ghế
-                    </th>
-                    <th className="p-3 text-left font-medium text-gray-700">
-                      Tổng tiền
-                    </th>
-                    <th className="p-3 text-left font-medium text-gray-700">
-                      Trạng thái
-                    </th>
-                    <th className="p-3 text-left font-medium text-gray-700">
-                      Ngày tạo
-                    </th>
-                    <th className="p-3 text-center font-medium text-gray-700">
-                      Thao tác
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => (
-                    <tr key={order._id} className="border-b hover:bg-gray-50">
-                      <td className="p-3">
-                        <div className="font-mono text-sm">
-                          {order._id.slice(-8)}
-                        </div>
-                        {isExpired(order.expiresAt as unknown as string) &&
-                          order.status === "pending_offline" && (
-                            <div className="text-xs text-red-500">
-                              Đã hết hạn
-                            </div>
-                          )}
-                      </td>
-                      <td className="p-3">
-                        <div className="font-medium">
-                          {order.buyer.fullName}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {order.buyer.phone}
-                        </div>
-                        {order.buyer.email && (
-                          <div className="text-sm text-gray-600">
-                            {order.buyer.email}
-                          </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Mã đơn</TableHead>
+                  <TableHead>Khách hàng</TableHead>
+                  <TableHead>Ghế</TableHead>
+                  <TableHead>Tổng tiền</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead>Ngày tạo</TableHead>
+                  <TableHead className="text-center">Thao tác</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.map((order) => (
+                  <TableRow key={order._id}>
+                    <TableCell>
+                      <div className="font-mono text-sm">
+                        {order._id.slice(-8)}
+                      </div>
+                      {isExpired(order.expiresAt) &&
+                        order.status === "pending_offline" && (
+                          <div className="text-xs text-red-500">Đã hết hạn</div>
                         )}
-                      </td>
-                      <td className="p-3">
-                        <div className="font-mono text-sm">
-                          {order.seatIds.join(", ")}
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">{order.buyer.fullName}</div>
+                      <div className="text-sm text-gray-600">
+                        {order.buyer.phone}
+                      </div>
+                      {order.buyer.email && (
+                        <div className="text-sm text-gray-600">
+                          {order.buyer.email}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {order.seatIds.length} ghế
-                        </div>
-                      </td>
-                      <td className="p-3 font-medium">
-                        {formatCurrency(order.amount)}
-                      </td>
-                      <td className="p-3">{getStatusBadge(order.status)}</td>
-                      <td className="p-3 text-sm text-gray-600">
-                        {formatDate(order.createdAt)}
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center justify-center space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setSelectedOrder(order)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-
-                          {order.status === "pending_offline" &&
-                            !isExpired(order.expiresAt) && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700"
-                                  onClick={() =>
-                                    handleOrderAction(order._id, "approve")
-                                  }
-                                  disabled={actionLoading === order._id}
-                                >
-                                  {actionLoading === order._id ? (
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                  ) : (
-                                    <Check className="h-4 w-4" />
-                                  )}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() =>
-                                    handleOrderAction(order._id, "reject")
-                                  }
-                                  disabled={actionLoading === order._id}
-                                >
-                                  {actionLoading === order._id ? (
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                  ) : (
-                                    <X className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              </>
-                            )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-mono text-sm">
+                        {order.seatIds.join(", ")}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {order.seatIds.length} ghế
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {formatCurrency(order.amount)}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(order.status)}</TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {formatDate(order.createdAt)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedOrder(order)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {order.status === "pending_offline" &&
+                          !isExpired(order.expiresAt) && (
+                            <>
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700"
+                                onClick={() =>
+                                  handleOrderAction(order._id, "approve")
+                                }
+                                disabled={actionLoading === order._id}
+                              >
+                                {actionLoading === order._id ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                ) : (
+                                  <Check className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() =>
+                                  handleOrderAction(order._id, "reject")
+                                }
+                                disabled={actionLoading === order._id}
+                              >
+                                {actionLoading === order._id ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                ) : (
+                                  <X className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </>
+                          )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
 
           {/* Pagination */}

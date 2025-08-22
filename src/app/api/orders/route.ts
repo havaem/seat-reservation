@@ -1,19 +1,43 @@
 import { ENV } from "@/config/env";
 import { EVENT } from "@/config/event";
+import { SETTING_KEYS, DEFAULT_SETTINGS } from "@/config/settings";
 import { dbConnect } from "@/lib/db";
 import { withIdempotency } from "@/lib/idempotency";
 import { makeBankContent } from "@/lib/utils";
 import { Hold } from "@/models/Hold";
 import { Order } from "@/models/Order";
+import { Settings } from "@/models/Settings";
 import {
   OrderCreateRequestSchema,
   OrderCreateResponseSchema,
 } from "@/types/api";
 import mongoose from "mongoose";
+
 export async function POST(req: Request) {
   return withIdempotency(req, async () => {
     const body = OrderCreateRequestSchema.parse(await req.json());
     await dbConnect();
+
+    // Check if booking is enabled
+    const bookingSetting = await Settings.findOne({
+      key: SETTING_KEYS.BOOKING_ENABLED,
+    }).lean();
+    const bookingEnabled = bookingSetting
+      ? Boolean((bookingSetting as unknown as { value: boolean }).value)
+      : DEFAULT_SETTINGS.bookingEnabled;
+
+    if (!bookingEnabled) {
+      return new Response(
+        JSON.stringify({
+          code: "BOOKING_DISABLED",
+          message: "Tính năng đặt vé hiện đang tạm ngưng",
+        }),
+        {
+          status: 403,
+          headers: { "content-type": "application/json" },
+        },
+      );
+    }
     const hold = await Hold.findById(body.holdId);
     if (!hold)
       return new Response(JSON.stringify({ code: "HOLD_NOT_FOUND" }), {

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Users,
   DollarSign,
@@ -75,17 +76,17 @@ export default function AdminDashboard() {
     const statusConfig = {
       pending_offline: {
         label: "Chờ xử lý",
-        color: "bg-yellow-100 text-yellow-800",
+        variant: "secondary" as const,
         icon: Clock,
       },
       paid_offline: {
         label: "Đã thanh toán",
-        color: "bg-green-100 text-green-800",
+        variant: "default" as const,
         icon: CheckCircle,
       },
       cancelled: {
         label: "Đã hủy",
-        color: "bg-red-100 text-red-800",
+        variant: "destructive" as const,
         icon: XCircle,
       },
     };
@@ -96,12 +97,10 @@ export default function AdminDashboard() {
     const Icon = config.icon;
 
     return (
-      <span
-        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${config.color}`}
-      >
-        <Icon className="mr-1 h-3 w-3" />
+      <Badge variant={config.variant} className="gap-1">
+        <Icon className="h-3 w-3" />
         {config.label}
-      </span>
+      </Badge>
     );
   };
 

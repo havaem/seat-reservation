@@ -8,7 +8,7 @@ export const renderClassNameColorSeat = (status: string) => {
       className = "bg-purple-200";
       break;
     case "reserved":
-      className = "bg-gray-600";
+      className = "bg-gray-500 text-white opacity-80";
       break;
     default:
       break;
