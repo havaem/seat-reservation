@@ -2,10 +2,12 @@
 import { EVENT_TIER_CODE } from "@/config/event";
 import { TBankInfo, TCheckoutStep } from "@/hooks/useCheckout";
 import { OrderItem } from "@/models/Order";
+import { getErrorMessage } from "@/utils/getErrorMessage";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ComponentProps, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import z, { email } from "zod";
+import { toast } from "sonner";
+import z from "zod";
 import OrderItemAction from "./OrderItemAction";
 import { Button } from "./ui/button";
 import {
@@ -27,8 +29,6 @@ import {
 } from "./ui/form";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { getErrorMessage } from "@/utils/getErrorMessage";
-import { toast } from "sonner";
 
 const formSchema = z.object({
   fullName: z

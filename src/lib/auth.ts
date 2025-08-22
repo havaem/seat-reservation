@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { SignJWT, jwtVerify } from "jose";
+import { JWTPayload, SignJWT, jwtVerify } from "jose";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "fallback-secret-key-for-development",
@@ -24,7 +24,7 @@ const ADMIN_CREDENTIALS = {
 };
 
 export async function createJWT(payload: SessionData): Promise<string> {
-  return await new SignJWT(payload)
+  return await new SignJWT(payload as unknown as JWTPayload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("24h")
@@ -33,7 +33,7 @@ export async function createJWT(payload: SessionData): Promise<string> {
 
 export async function verifyJWT(token: string): Promise<SessionData> {
   const { payload } = await jwtVerify(token, JWT_SECRET);
-  return payload as SessionData;
+  return payload as unknown as SessionData;
 }
 
 export async function authenticate(

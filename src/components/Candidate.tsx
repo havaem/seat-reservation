@@ -3,7 +3,6 @@
 import { motion } from "motion/react";
 import CandidateItem from "./CandidateItem";
 import PageTitle from "./ui/title";
-import { section } from "motion/react-client";
 const CANDIDATES: ICandidate[] = [
   {
     name: "Thí sinh 1",

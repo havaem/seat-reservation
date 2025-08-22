@@ -5,13 +5,13 @@ import { requireAdmin } from "@/lib/auth";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await requireAdmin();
     await dbConnect();
 
-    const { id } = params;
+    const { id } = await params;
 
     const seat = await Seat.findById(id);
     if (!seat) {

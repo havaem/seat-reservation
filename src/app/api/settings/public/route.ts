@@ -1,11 +1,7 @@
-import { NextResponse } from "next/server";
+import { DEFAULT_SETTINGS, getPublicSettings } from "@/config/settings";
 import { dbConnect } from "@/lib/db";
 import { Settings } from "@/models/Settings";
-import {
-  SETTING_KEYS,
-  DEFAULT_SETTINGS,
-  getPublicSettings,
-} from "@/config/settings";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   try {

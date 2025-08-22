@@ -6,7 +6,7 @@ const MONGODB_URI =
 
 (async () => {
   await mongoose.connect(MONGODB_URI);
-  const seats: SeatDoc[] = [];
+  const seats: Omit<SeatDoc, "_id">[] = [];
   for (let r = 0; r < 10; r++) {
     const row = String.fromCharCode(65 + r);
     for (let c = 1; c <= 10; c++) {

@@ -1,8 +1,6 @@
-import React from "react";
+import { Check, CircleQuestionMark, Palette } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import PageTitle from "./ui/title";
-import { section } from "motion/react-client";
-import { Check, CircleQuestionMark, Palette } from "lucide-react";
 
 const AudienceBenefits = () => {
   return (
