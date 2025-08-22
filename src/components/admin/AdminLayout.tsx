@@ -1,19 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
-  Users,
-  MapPin,
-  Settings,
   LogOut,
+  MapPin,
   Menu,
+  Settings,
+  Users,
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import React, { useState } from "react";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -133,7 +133,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
 
         {/* Page content */}
-        <main className="p-6">{children}</main>
+        <main className="container mx-auto p-6">{children}</main>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { Schema, model, models } from "mongoose";
 
 export interface SeatDoc {
+  _id: string;
   seatId: string;
   status: "available" | "held" | "reserved";
   holdId?: string | null;

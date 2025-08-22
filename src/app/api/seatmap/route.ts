@@ -6,7 +6,7 @@ import { Seat } from "@/models/Seat";
 export async function GET() {
   try {
     await dbConnect();
-    const seats = await Seat.find({}, { _id: 0 }).lean();
+    const seats = await Seat.find({}).lean();
     return NextResponse.json({
       pricingTiers: EVENT.pricingTiers,
       seats,
