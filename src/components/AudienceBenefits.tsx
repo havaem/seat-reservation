@@ -38,7 +38,7 @@ const AudienceBenefits = () => {
                   <li className="flex items-start gap-4">
                     <Check className="text-green-500" />
                     <div>
-                      <span>Hamburger</span>
+                      <span>Hamburger - Chọn 1</span>
                       <ul>
                         <li>- Bò + phô mai</li>
                         <li>- Gà + phô mai</li>
@@ -53,10 +53,8 @@ const AudienceBenefits = () => {
                   <li className="flex items-start gap-4">
                     <Check className="text-green-500" />
                     <div>
-                      <span>1 Nước Uống</span>
+                      <span>1 Nước Uống - Chọn 1</span>
                       <ul>
-                        <li>- Yuzu Sparkling</li>
-                        <li>- Berries Sparkling</li>
                         <li>- Soda Thanh Yên</li>
                         <li>- Soda Quả Mọng</li>
                       </ul>
@@ -82,10 +80,8 @@ const AudienceBenefits = () => {
                   <li className="flex items-start gap-4">
                     <Check className="text-green-500" />
                     <div>
-                      <span>1 Nước Uống</span>
+                      <span>1 Nước Uống - Chọn 1</span>
                       <ul>
-                        <li>- Yuzu Sparkling</li>
-                        <li>- Berries Sparkling</li>
                         <li>- Soda Thanh Yên</li>
                         <li>- Soda Quả Mọng</li>
                       </ul>
@@ -117,7 +113,7 @@ const AudienceBenefits = () => {
                   <p className="text-gray-600">
                     Khán giả sẽ viết số điểm dự đoán cho nhà vô địch “Đất Võ
                     Trời Văn” mùa 3 vào một tờ phiếu có mã số ghế riêng. Sau
-                    trận đấu, 13 khán giả có con số dự đoán gần nhất với số điểm
+                    trận đấu, 8 khán giả có con số dự đoán gần nhất với số điểm
                     của nhà vô địch sẽ được tặng 1 voucher photobooth trị giá
                     70.000 VNĐ tại Coco.Booth - Quy Nhơn Concept.
                   </p>
