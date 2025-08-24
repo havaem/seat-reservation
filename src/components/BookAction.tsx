@@ -4,7 +4,7 @@ import { useBookingStatus } from "@/hooks/useBookingStatus";
 import useReady from "@/hooks/useReady";
 import { cn } from "@/lib/utils";
 import { renderClassNameColorSeat } from "@/utils/renderClassnameSeat";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SeatItem from "./SeatItem";
 import { Button } from "./ui/button";
 import UserInputData from "./UserInputData";
@@ -46,6 +46,13 @@ const BookAction = () => {
       setChoosenSeats([]);
     }
   };
+
+  useEffect(() => {
+    if (!isOpenDialog) {
+      setChoosenSeats([]);
+      // refetch();
+    }
+  }, [isOpenDialog]);
 
   return (
     <div className="space-y-4">

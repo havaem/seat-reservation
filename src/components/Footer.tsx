@@ -1,5 +1,6 @@
 import { Facebook, Instagram, LocateIcon, Mail, Phone } from "lucide-react";
 import Image from "next/image";
+import { TikTokIcon } from "./icons/TikTokIcon";
 
 const Footer = () => {
   return (
@@ -83,6 +84,16 @@ const Footer = () => {
                 >
                   <Instagram size={20} />
                   instagram.com/LEOchuyenlqdb
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://www.tiktok.com/@leo.clb.olympia.c"
+                  className="flex gap-4"
+                  target="_blank"
+                >
+                  <TikTokIcon width={20} height={20} />
+                  tiktok.com/@leo.clb.olympia.c
                 </a>
               </li>
             </ul>

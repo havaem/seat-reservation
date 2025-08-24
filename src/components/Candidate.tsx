@@ -3,26 +3,24 @@
 import { motion } from "motion/react";
 import CandidateItem from "./CandidateItem";
 import PageTitle from "./ui/title";
+import Image from "next/image";
+import React from "react";
 const CANDIDATES: ICandidate[] = [
   {
-    name: "Thí sinh 1",
-    description: "Mô tả về thí sinh 1",
-    image: "/images/avatar.png",
+    name: "Nguyễn Cao Thành Nhơn",
+    image: "/images/nguyen-cao-thanh-nhon.JPG",
   },
   {
-    name: "Thí sinh 2",
-    description: "Mô tả về thí sinh 2",
-    image: "/images/avatar.png",
+    name: "Đỗ Thanh Phương",
+    image: "/images/do-thanh-phuong.JPG",
   },
   {
-    name: "Thí sinh 3",
-    description: "Mô tả về thí sinh 3",
-    image: "/images/avatar.png",
+    name: "Nguyễn Minh Tài",
+    image: "/images/nguyen-minh-tai.JPG",
   },
   {
-    name: "Thí sinh 4",
-    description: "Mô tả về thí sinh 4 Mô tả về thí sinh 4",
-    image: "/images/avatar.png",
+    name: "Nguyễn Quốc Dân",
+    image: "/images/nguyen-quoc-dan.JPG",
   },
 ];
 
@@ -59,6 +57,14 @@ const Candidate = () => {
             <CandidateItem key={candidate.name} data={candidate} />
           ))}
         </div>
+        <Image
+          src={"/images/4-thi-sinh.JPG"}
+          alt={"4 Thí Sinh Xuất Sắc"}
+          width={0}
+          height={0}
+          sizes="100vw"
+          className="h-auto w-full max-w-3xl rounded-lg object-cover"
+        />
       </div>
     </section>
   );
