@@ -5,10 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "./ui/button";
 
-const NAVIGATION_LINKS = [
-  { href: "#thi-sinh", label: "Thí Sinh" },
-  { href: "/admin", label: "Admin", external: true },
-];
+const NAVIGATION_LINKS = [{ href: "#thi-sinh", label: "Thí Sinh" }];
 
 const Header = () => {
   const [isOpenMobileMenu, setIsOpenMobileMenu] = useState(false);
@@ -25,15 +22,7 @@ const Header = () => {
   }, [handleResize]);
 
   const handleNavClick = useCallback(
-    (
-      e: React.MouseEvent<HTMLAnchorElement>,
-      href: string,
-      external?: boolean,
-    ) => {
-      if (external) {
-        setIsOpenMobileMenu(false);
-        return; // Let the default navigation happen
-      }
+    (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
       if (href.startsWith("#")) {
         e.preventDefault();
         const el = document.getElementById(href.slice(1));
@@ -65,7 +54,7 @@ const Header = () => {
               key={link.href}
               href={link.href}
               className="text-foreground hover:text-primary mb-2 block"
-              onClick={(e) => handleNavClick(e, link.href, link.external)}
+              onClick={(e) => handleNavClick(e, link.href)}
             >
               {link.label}
             </Link>
@@ -100,7 +89,7 @@ const Header = () => {
               key={link.href}
               href={link.href}
               className="text-foreground hover:text-primary"
-              onClick={(e) => handleNavClick(e, link.href, link.external)}
+              onClick={(e) => handleNavClick(e, link.href)}
             >
               {link.label}
             </Link>
