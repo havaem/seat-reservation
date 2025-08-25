@@ -1,6 +1,5 @@
 import { dbConnect } from "@/lib/db";
 import { Order } from "@/models/Order";
-import { Seat } from "@/models/Seat";
 import { NextRequest, NextResponse } from "next/server";
 import { validateCronAuth, createUnauthorizedResponse } from "@/lib/cronAuth";
 
@@ -12,31 +11,26 @@ export async function GET(request: NextRequest) {
 
   try {
     await dbConnect();
-    const now = new Date();
 
-    const expiredOrders = await Order.find({
-      status: "pending_offline",
-      expiresAt: { $lt: now },
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // Cleanup old completed orders (paid_offline or cancelled) older than 30 days
+    const result = await Order.deleteMany({
+      status: { $in: ["paid_offline", "cancelled", "expired"] },
+      createdAt: { $lt: thirtyDaysAgo },
     });
-
-    for (const order of expiredOrders) {
-      await Seat.updateMany(
-        { seatId: { $in: order.seatIds } },
-        { $set: { status: "available" } },
-      );
-      order.status = "cancelled";
-      await order.save();
-    }
 
     return NextResponse.json({
       success: true,
-      released: expiredOrders.length,
+      deletedOrders: result.deletedCount,
+      message: "Database optimization completed",
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Release expired orders error:", error);
+    console.error("Database optimization error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to release expired orders" },
+      { success: false, error: "Database optimization failed" },
       { status: 500 },
     );
   }
