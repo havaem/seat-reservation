@@ -21,24 +21,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  AlertTriangle,
-  CheckCircle,
-  Edit,
-  RefreshCw,
-  Save,
-  XCircle,
-} from "lucide-react";
-import React, { memo, useCallback, useMemo, useState } from "react";
-import { cn } from "@/lib/utils";
-import { renderClassNameColorSeat } from "@/utils/renderClassnameSeat";
-import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
-import {
   useAdminSeatsStats,
   useBulkUpdateSeats,
-  useUpdateSeatStatus,
   useResetSeat,
+  useUpdateSeatStatus,
 } from "@/hooks/useAdmin";
+import { cn } from "@/lib/utils";
+import { renderClassNameColorSeat } from "@/utils/renderClassnameSeat";
+import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, Edit, RefreshCw, Save } from "lucide-react";
+import React, { memo, useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 interface PricingTier {
   code: string;

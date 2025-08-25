@@ -1,26 +1,25 @@
 "use client";
 
-import React, { useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import {
-  Settings as SettingsIcon,
-  RefreshCw,
-  AlertTriangle,
-  CheckCircle,
-  Users,
-  ShieldOff,
-  Play,
-  Square,
-  Wrench,
-  Activity,
-} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { SETTING_KEYS, DEFAULT_SETTINGS } from "@/config/settings";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { SETTING_KEYS } from "@/config/settings";
 import { useAdminSettings, useUpdateSetting } from "@/hooks/useAdmin";
+import {
+  Activity,
+  AlertTriangle,
+  Play,
+  RefreshCw,
+  Settings as SettingsIcon,
+  ShieldOff,
+  Square,
+  Users,
+  Wrench,
+} from "lucide-react";
+import { useCallback } from "react";
 import { toast } from "sonner";
 
 interface AppSettings {

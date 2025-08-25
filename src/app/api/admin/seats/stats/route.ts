@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth";
 import { dbConnect } from "@/lib/db";
 import { Seat } from "@/models/Seat";
-import { requireAdmin } from "@/lib/auth";
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Verify admin authentication
     await requireAdmin();
