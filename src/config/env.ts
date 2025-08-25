@@ -7,6 +7,9 @@ class Environment {
   BANK_ACC_NAME = this.getString("BANK_ACC_NAME");
   BANK_ACC_NUMBER = this.getString("BANK_ACC_NUMBER");
   BANK_NAME = this.getString("BANK_NAME");
+  JWT_SECRET = this.getString("JWT_SECRET");
+  ADMIN_USERNAME = this.getString("ADMIN_USERNAME");
+  ADMIN_PASSWORD = this.getString("ADMIN_PASSWORD");
 
   // private getBoolean(key: string): boolean {
   //   const value = this.get(key);

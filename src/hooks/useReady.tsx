@@ -1,6 +1,6 @@
-import { EVENT } from "@/config/event";
 import { SeatDoc } from "@/models/Seat";
-import { useEffect, useState } from "react";
+import { useSeatMap } from "@/hooks/useSeatMap";
+import { useMemo } from "react";
 
 function splitLeftRight(arr: SeatDoc[], groupSize = 10) {
   const left = [];
@@ -16,40 +16,28 @@ function splitLeftRight(arr: SeatDoc[], groupSize = 10) {
 }
 
 const useReady = () => {
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [pricingTiers, setPricingTiers] = useState<typeof EVENT.pricingTiers>(
-    [],
-  );
-  const [seats, setSeats] = useState<{
-    left: SeatDoc[];
-    right: SeatDoc[];
-  }>({
-    left: [],
-    right: [],
-  });
-  const fetchSeatData = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/seatmap");
-      const data = await response.json();
-      setPricingTiers(data.pricingTiers);
-      setSeats(splitLeftRight(data.seats));
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    seatMap,
+    seats: rawSeats,
+    pricingTiers,
+    loading,
+    error,
+    refetch,
+  } = useSeatMap();
 
-  useEffect(() => {
-    fetchSeatData();
-  }, []);
+  // Memoize split seats to avoid recalculation
+  const seats = useMemo(() => {
+    return splitLeftRight(rawSeats);
+  }, [rawSeats]);
 
   return {
     pricingTiers,
     seats,
-    isLoading,
-    refetch: fetchSeatData
+    isLoading: loading,
+    error,
+    refetch,
+    seatMap, // Include full seat map data for advanced usage
   };
 };
+
 export default useReady;

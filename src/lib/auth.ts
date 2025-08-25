@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { JWTPayload, SignJWT, jwtVerify } from "jose";
+import { ENV } from "@/config/env";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "fallback-secret-key-for-development",
@@ -16,10 +17,10 @@ export interface SessionData {
   expires: string;
 }
 
-// Hardcoded admin credentials (in production, use database)
+// Hardcoded admin credentials
 const ADMIN_CREDENTIALS = {
-  username: "admin",
-  password: "admin123", // In production, use hashed passwords
+  username: ENV.ADMIN_USERNAME,
+  password: ENV.ADMIN_PASSWORD,
   role: "admin" as const,
 };
 

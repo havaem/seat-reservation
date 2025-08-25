@@ -5,10 +5,21 @@ import { Hold } from "@/models/Hold";
 import { Seat } from "@/models/Seat";
 import { Settings } from "@/models/Settings";
 import { SETTING_KEYS, DEFAULT_SETTINGS } from "@/config/settings";
+import { checkRateLimit, getRateLimitResponse } from "@/lib/rateLimit";
 import mongoose from "mongoose";
 
 export async function POST(req: Request) {
   return withIdempotency(req, async () => {
+    const ip =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+
+    if (!checkRateLimit(ip, 5, 60000)) {
+      // 5 requests per minute
+      return getRateLimitResponse();
+    }
+
     const body = HoldCreateRequestSchema.parse(await req.json());
     await dbConnect();
 

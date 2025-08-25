@@ -119,10 +119,6 @@ export default function LoginForm() {
                 "Đăng Nhập"
               )}
             </Button>
-
-            <div className="mt-6 text-center text-sm text-gray-500">
-              <p>Demo: admin / admin123</p>
-            </div>
           </form>
         </CardContent>
       </Card>
