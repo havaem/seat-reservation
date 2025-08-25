@@ -237,6 +237,7 @@ export default function OrderManagement() {
                   <TableHead>Khách hàng</TableHead>
                   <TableHead>Ghế</TableHead>
                   <TableHead>Tổng tiền</TableHead>
+                  <TableHead>Thông tin CK</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Ngày tạo</TableHead>
                   <TableHead className="text-center">Thao tác</TableHead>
@@ -275,6 +276,9 @@ export default function OrderManagement() {
                     </TableCell>
                     <TableCell className="font-medium">
                       {formatCurrency(order.amount)}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {order.bankContent}
                     </TableCell>
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
                     <TableCell className="text-sm text-gray-600">
