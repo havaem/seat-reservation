@@ -1,17 +1,10 @@
 // /app/api/_cron/release_holds/route.ts
 import { dbConnect } from "@/lib/db";
 import { Hold } from "@/models/Hold";
-import { Seat } from "@/models/Seat";
 import { Order } from "@/models/Order";
-import { NextRequest } from "next/server";
-import { validateCronAuth, createUnauthorizedResponse } from "@/lib/cronAuth";
+import { Seat } from "@/models/Seat";
 
-export async function GET(request: NextRequest) {
-  // Validate cron authorization
-  if (!validateCronAuth(request)) {
-    return createUnauthorizedResponse();
-  }
-
+export async function GET() {
   try {
     await dbConnect();
     const now = new Date();

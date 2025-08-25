@@ -10,7 +10,6 @@ class Environment {
   JWT_SECRET = this.getString("JWT_SECRET");
   ADMIN_USERNAME = this.getString("ADMIN_USERNAME");
   ADMIN_PASSWORD = this.getString("ADMIN_PASSWORD");
-  CRON_SECRET = this.getString("CRON_SECRET");
 
   // private getBoolean(key: string): boolean {
   //   const value = this.get(key);

@@ -1,14 +1,8 @@
 import { dbConnect } from "@/lib/db";
 import { Order } from "@/models/Order";
-import { NextRequest, NextResponse } from "next/server";
-import { validateCronAuth, createUnauthorizedResponse } from "@/lib/cronAuth";
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
-  // Validate cron authorization
-  if (!validateCronAuth(request)) {
-    return createUnauthorizedResponse();
-  }
-
+export async function GET() {
   try {
     await dbConnect();
 
