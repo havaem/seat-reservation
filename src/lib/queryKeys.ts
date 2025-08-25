@@ -29,6 +29,8 @@ export const queryKeys = {
     dashboard: () => [...queryKeys.admin.all, "dashboard"] as const,
     orders: (filters?: Record<string, unknown>) =>
       [...queryKeys.admin.all, "orders", filters] as const,
+    seatsStats: () => [...queryKeys.admin.all, "seats", "stats"] as const,
+    settings: () => [...queryKeys.admin.all, "settings"] as const,
   },
 
   // Queue

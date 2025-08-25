@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SETTING_KEYS, DEFAULT_SETTINGS } from "@/config/settings";
+import { useAdminSettings, useUpdateSetting } from "@/hooks/useAdmin";
+import { toast } from "sonner";
 
 interface AppSettings {
   bookingEnabled: boolean;
@@ -28,60 +30,21 @@ interface AppSettings {
 }
 
 export default function SettingsManagement() {
-  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  const { settings, loading, error, refetch } = useAdminSettings();
+  const updateSettingMutation = useUpdateSetting();
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/admin/settings");
-      if (!response.ok) throw new Error("Failed to fetch settings");
-
-      const data = await response.json();
-      setSettings(data.settings);
-    } catch (error) {
-      console.error("Fetch settings error:", error);
-      setMessage({ type: "error", text: "Không thể tải cài đặt" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateSetting = async (
-    key: keyof AppSettings,
-    value: boolean | number,
-  ) => {
-    try {
-      setSaving(true);
-      const response = await fetch("/api/admin/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, value }),
-      });
-
-      if (!response.ok) throw new Error("Failed to update setting");
-
-      setSettings((prev) => ({ ...prev, [key]: value }));
-      setMessage({ type: "success", text: "Cập nhật thành công" });
-
-      // Clear message after 3 seconds
-      setTimeout(() => setMessage(null), 3000);
-    } catch (error) {
-      console.error("Update setting error:", error);
-      setMessage({ type: "error", text: "Cập nhật thất bại" });
-    } finally {
-      setSaving(false);
-    }
-  };
+  const handleSettingChange = useCallback(
+    async (key: string, value: unknown) => {
+      try {
+        await updateSettingMutation.mutateAsync({ key, value });
+        toast.success("Cài đặt đã được cập nhật");
+      } catch (error) {
+        console.error("Update setting error:", error);
+        toast.error("Cập nhật cài đặt thất bại");
+      }
+    },
+    [updateSettingMutation],
+  );
 
   if (loading) {
     return (
@@ -109,7 +72,7 @@ export default function SettingsManagement() {
           <h1 className="text-3xl font-bold text-gray-900">Cài đặt hệ thống</h1>
           <p className="mt-1 text-gray-600">Quản lý cấu hình ứng dụng</p>
         </div>
-        <Button onClick={fetchSettings} disabled={loading}>
+        <Button onClick={() => refetch()} disabled={loading}>
           <RefreshCw
             className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
           />
@@ -117,15 +80,11 @@ export default function SettingsManagement() {
         </Button>
       </div>
 
-      {/* Message */}
-      {message && (
-        <Alert variant={message.type === "error" ? "destructive" : "default"}>
-          {message.type === "success" ? (
-            <CheckCircle className="h-4 w-4" />
-          ) : (
-            <AlertTriangle className="h-4 w-4" />
-          )}
-          <AlertDescription>{message.text}</AlertDescription>
+      {/* Error handling */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>Lỗi tải cài đặt: {error.message}</AlertDescription>
         </Alert>
       )}
 
@@ -152,28 +111,36 @@ export default function SettingsManagement() {
             <div className="flex items-center space-x-3">
               <Switch
                 id="bookingEnabled"
-                checked={settings.bookingEnabled}
-                onCheckedChange={(checked: boolean) =>
-                  updateSetting(SETTING_KEYS.BOOKING_ENABLED, checked)
+                checked={
+                  (settings as unknown as AppSettings)?.bookingEnabled ?? false
                 }
-                disabled={saving}
+                onCheckedChange={(checked: boolean) =>
+                  handleSettingChange(SETTING_KEYS.BOOKING_ENABLED, checked)
+                }
+                disabled={updateSettingMutation.isPending}
               />
               <Badge
-                variant={settings.bookingEnabled ? "default" : "destructive"}
+                variant={
+                  (settings as unknown as AppSettings)?.bookingEnabled
+                    ? "default"
+                    : "destructive"
+                }
                 className="gap-1"
               >
-                {settings.bookingEnabled ? (
+                {(settings as unknown as AppSettings)?.bookingEnabled ? (
                   <Play className="h-3 w-3" />
                 ) : (
                   <Square className="h-3 w-3" />
                 )}
-                {settings.bookingEnabled ? "Đang hoạt động" : "Đã tắt"}
+                {(settings as unknown as AppSettings)?.bookingEnabled
+                  ? "Đang hoạt động"
+                  : "Đã tắt"}
               </Badge>
             </div>
           </div>
 
           {/* Booking Status Alert */}
-          {!settings.bookingEnabled && (
+          {!(settings as unknown as AppSettings)?.bookingEnabled && (
             <Alert variant="destructive">
               <ShieldOff className="h-4 w-4" />
               <AlertDescription>
@@ -202,15 +169,20 @@ export default function SettingsManagement() {
                 type="number"
                 min="1"
                 max="50"
-                value={settings.maxSeatsPerOrder}
+                value={
+                  (settings as unknown as AppSettings)?.maxSeatsPerOrder ?? 1
+                }
                 onChange={(e) => {
                   const value = parseInt(e.target.value);
                   if (value >= 1 && value <= 50) {
-                    updateSetting(SETTING_KEYS.MAX_SEATS_PER_ORDER, value);
+                    handleSettingChange(
+                      SETTING_KEYS.MAX_SEATS_PER_ORDER,
+                      value,
+                    );
                   }
                 }}
                 className="w-20 rounded-md border border-gray-300 px-3 py-2 text-center focus:border-transparent focus:ring-2 focus:ring-[#f88134] focus:outline-none"
-                disabled={saving}
+                disabled={updateSettingMutation.isPending}
               />
               <span className="text-sm text-gray-500">ghế</span>
             </div>
@@ -243,28 +215,36 @@ export default function SettingsManagement() {
             <div className="flex items-center space-x-3">
               <Switch
                 id="maintenanceMode"
-                checked={settings.maintenanceMode}
-                onCheckedChange={(checked: boolean) =>
-                  updateSetting(SETTING_KEYS.MAINTENANCE_MODE, checked)
+                checked={
+                  (settings as unknown as AppSettings)?.maintenanceMode ?? false
                 }
-                disabled={saving}
+                onCheckedChange={(checked: boolean) =>
+                  handleSettingChange(SETTING_KEYS.MAINTENANCE_MODE, checked)
+                }
+                disabled={updateSettingMutation.isPending}
               />
               <Badge
-                variant={settings.maintenanceMode ? "secondary" : "outline"}
+                variant={
+                  (settings as unknown as AppSettings)?.maintenanceMode
+                    ? "secondary"
+                    : "outline"
+                }
                 className="gap-1"
               >
-                {settings.maintenanceMode ? (
+                {(settings as unknown as AppSettings)?.maintenanceMode ? (
                   <Wrench className="h-3 w-3" />
                 ) : (
                   <Activity className="h-3 w-3" />
                 )}
-                {settings.maintenanceMode ? "Đang bảo trì" : "Bình thường"}
+                {(settings as unknown as AppSettings)?.maintenanceMode
+                  ? "Đang bảo trì"
+                  : "Bình thường"}
               </Badge>
             </div>
           </div>
 
           {/* Maintenance Mode Alert */}
-          {settings.maintenanceMode && (
+          {(settings as unknown as AppSettings)?.maintenanceMode && (
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>

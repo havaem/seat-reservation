@@ -30,14 +30,19 @@ export interface QueueStatus {
 }
 
 export interface AdminDashboardData {
-  stats: {
-    totalSeats: number;
-    availableSeats: number;
-    reservedSeats: number;
-    heldSeats: number;
+  overview: {
     totalOrders: number;
+    pendingOrders: number;
+    paidOrders: number;
+    cancelledOrders: number;
     totalRevenue: number;
     occupancyRate: number;
+  };
+  seats: {
+    total: number;
+    available: number;
+    reserved: number;
+    held: number;
   };
   recentOrders: Array<{
     _id: string;
@@ -51,6 +56,71 @@ export interface AdminDashboardData {
     status: string;
     createdAt: string;
   }>;
+  ordersByDay: Array<{
+    date: string;
+    orders: number;
+  }>;
+}
+
+export interface AdminOrdersData {
+  orders: Array<{
+    _id: string;
+    orderId: string;
+    buyer: {
+      fullName: string;
+      phone: string;
+      email?: string;
+    };
+    amount: number;
+    status: string;
+    seatIds: string[];
+    bankContent?: string;
+    createdAt: string;
+    expiresAt: string;
+    paidAt?: string;
+    reviewNote?: string;
+    reviewedAt?: string;
+  }>;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
+export interface AdminSeatsStatsData {
+  stats: {
+    total: number;
+    available: number;
+    reserved: number;
+    held: number;
+    revenue: number;
+    occupancyRate: number;
+  };
+}
+
+export interface AdminSettingsData {
+  settings: Record<string, unknown>;
+}
+
+export interface AdminBulkActionResponse {
+  success: boolean;
+  message: string;
+  updatedSeats: number;
+}
+
+export interface AdminOrderActionResponse {
+  success: boolean;
+  message: string;
+  order: {
+    _id: string;
+    status: string;
+    reviewNote?: string;
+    reviewedAt?: string;
+  };
 }
 
 // API Functions
@@ -107,28 +177,114 @@ export const apiClient = {
     return response.json();
   },
 
-  async getAdminOrders(params: URLSearchParams): Promise<{
-    orders: Array<{
-      _id: string;
-      orderId: string;
-      buyer: {
-        fullName: string;
-        phone: string;
-        email?: string;
-      };
-      amount: number;
-      status: string;
-      createdAt: string;
-      seatIds: string[];
-    }>;
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      totalItems: number;
-      itemsPerPage: number;
-    };
-  }> {
+  async getAdminOrders(params: URLSearchParams): Promise<AdminOrdersData> {
     const response = await fetch(`/api/admin/orders?${params}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async updateOrderStatus(
+    orderId: string,
+    action: "approve" | "reject",
+    reviewNote?: string,
+  ): Promise<AdminOrderActionResponse> {
+    const response = await fetch("/api/admin/orders", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ orderId, action, reviewNote }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async getSeatsStats(): Promise<AdminSeatsStatsData> {
+    const response = await fetch("/api/admin/seats/stats");
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async bulkUpdateSeats(
+    seatIds: string[],
+    action: "set_available" | "set_reserved" | "release_hold",
+  ): Promise<AdminBulkActionResponse> {
+    const response = await fetch("/api/admin/seats/bulk", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ seatIds, action }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async updateSeatStatus(
+    seatId: string,
+    status: "available" | "reserved" | "held",
+  ): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`/api/admin/seats/${seatId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async resetSeat(
+    seatId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`/api/admin/seats/${seatId}/reset`, {
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async getAdminSettings(): Promise<AdminSettingsData> {
+    const response = await fetch("/api/admin/settings");
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async updateSetting(
+    key: string,
+    value: unknown,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    setting: { key: string; value: unknown };
+  }> {
+    const response = await fetch("/api/admin/settings", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ key, value }),
+    });
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }

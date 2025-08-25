@@ -20,24 +20,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SeatDoc } from "@/models/Seat";
 import {
   AlertTriangle,
   CheckCircle,
   Edit,
   RefreshCw,
   Save,
+  XCircle,
 } from "lucide-react";
-import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
-
+import React, { memo, useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { renderClassNameColorSeat } from "@/utils/renderClassnameSeat";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import {
+  useAdminSeatsStats,
+  useBulkUpdateSeats,
+  useUpdateSeatStatus,
+  useResetSeat,
+} from "@/hooks/useAdmin";
 
 interface PricingTier {
   code: string;
   name: string;
   price: number;
+}
+
+interface SeatDoc {
+  _id: string;
+  seatId: string;
+  row: string;
+  position: number;
+  tierCode: string;
+  status: "available" | "reserved" | "held";
+  reservedBy?: string;
+  holdExpiresAt?: Date;
 }
 
 // Memoized function to split seats - only recalculates when seats array changes
@@ -116,15 +133,6 @@ const AdminSeatItem = memo<AdminSeatItemProps>(
 AdminSeatItem.displayName = "AdminSeatItem";
 
 export default function SeatMapManagement() {
-  const [seats, setSeats] = useState<{
-    left: SeatDoc[];
-    right: SeatDoc[];
-  }>({
-    left: [],
-    right: [],
-  });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [editingSeat, setEditingSeat] = useState<SeatDoc | null>(null);
   const [editValues, setEditValues] = useState({
@@ -133,39 +141,60 @@ export default function SeatMapManagement() {
   });
   const [bulkAction, setBulkAction] = useState("");
   const [showBulkDialog, setShowBulkDialog] = useState(false);
-  const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+
+  // TanStack Query hooks
+  const {
+    data: seatsData,
+    isLoading: seatsLoading,
+    error: seatsError,
+    refetch: refetchSeats,
+  } = useQuery({
+    queryKey: ["seatmap"],
+    queryFn: async () => {
+      const response = await fetch("/api/seatmap");
+      if (!response.ok) throw new Error("Failed to fetch seats");
+      return response.json();
+    },
+    staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: 30 * 1000, // Refetch every 30 seconds for real-time updates
+  });
+
+  const {
+    stats,
+    loading: statsLoading,
+    refetch: refetchStats,
+  } = useAdminSeatsStats();
+
+  // Mutations
+  const bulkUpdateMutation = useBulkUpdateSeats();
+  const updateSeatMutation = useUpdateSeatStatus();
+  const resetSeatMutation = useResetSeat();
 
   // Memoize split seats to avoid recalculation on every render
   const splitSeats = useMemo(() => {
-    const allSeats = [...seats.left, ...seats.right];
-    if (allSeats.length === 0) return { left: [], right: [] };
-    return splitLeftRight(allSeats);
-  }, [seats.left, seats.right]);
+    if (!seatsData?.seats || seatsData.seats.length === 0)
+      return { left: [], right: [] };
+    return splitLeftRight(seatsData.seats);
+  }, [seatsData?.seats]);
 
-  // Memoized fetch function
-  const fetchSeats = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/seatmap");
-      if (!response.ok) throw new Error("Failed to fetch seats");
+  // Alternative access for backwards compatibility
+  const seats = splitSeats;
 
-      const data = await response.json();
-      const { left, right } = splitLeftRight(data.seats);
-      setSeats({ left, right });
-    } catch (error) {
-      console.error("Fetch seats error:", error);
-      setMessage({ type: "error", text: "Không thể tải danh sách ghế" });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Combined loading state
+  const loading =
+    seatsLoading ||
+    bulkUpdateMutation.isPending ||
+    updateSeatMutation.isPending ||
+    resetSeatMutation.isPending;
 
-  useEffect(() => {
-    fetchSeats();
-  }, [fetchSeats]);
+  // Memoized selected seats Set for O(1) lookup performance
+  const selectedSeatsSet = useMemo(
+    () => new Set(selectedSeats),
+    [selectedSeats],
+  );
+
+  // Message state for backwards compatibility (replaced with toast)
+  const message = null;
 
   // Memoized seat selection handler
   const handleSeatSelect = useCallback((seatId: string) => {
@@ -190,82 +219,64 @@ export default function SeatMapManagement() {
     if (!editingSeat) return;
 
     try {
-      setSaving(true);
-      const response = await fetch(`/api/admin/seats/${editingSeat._id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editValues),
+      await updateSeatMutation.mutateAsync({
+        seatId: editingSeat._id,
+        status: editValues.status as "available" | "reserved" | "held",
       });
-
-      if (!response.ok) throw new Error("Failed to update seat");
 
       toast.success("Cập nhật ghế thành công");
       setEditingSeat(null);
-      fetchSeats();
     } catch (error) {
       console.error("Update seat error:", error);
       toast.error("Cập nhật ghế thất bại");
-    } finally {
-      setSaving(false);
     }
-  }, [editingSeat, editValues, fetchSeats]);
+  }, [editingSeat, editValues, updateSeatMutation]);
 
   // Memoized bulk action handler
   const handleBulkAction = useCallback(async () => {
     if (!bulkAction || selectedSeats.length === 0) return;
 
     try {
-      setSaving(true);
-      const response = await fetch("/api/admin/seats/bulk", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          seatIds: selectedSeats,
-          action: bulkAction,
-        }),
-      });
+      // Map UI action to API action
+      const actionMap: Record<
+        string,
+        "set_available" | "set_reserved" | "release_hold"
+      > = {
+        available: "set_available",
+        reserved: "set_reserved",
+        held: "release_hold",
+      };
 
-      if (!response.ok) throw new Error("Failed to perform bulk action");
+      await bulkUpdateMutation.mutateAsync({
+        seatIds: selectedSeats,
+        action: actionMap[bulkAction] || "set_available",
+      });
 
       toast.success(`Đã cập nhật ${selectedSeats.length} ghế`);
       setSelectedSeats([]);
       setBulkAction("");
       setShowBulkDialog(false);
-      fetchSeats();
     } catch (error) {
       console.error("Bulk action error:", error);
       toast.error("Thao tác hàng loạt thất bại");
-    } finally {
-      setSaving(false);
     }
-  }, [bulkAction, selectedSeats, fetchSeats]);
+  }, [bulkAction, selectedSeats, bulkUpdateMutation]);
 
   // Memoized reset function
   const resetSeat = useCallback(
     async (seatId: string) => {
       try {
-        setSaving(true);
-        const seat = [...seats.left, ...seats.right].find(
-          (s) => s.seatId === seatId,
-        );
+        const seat = seatsData?.find((s: SeatDoc) => s.seatId === seatId);
         if (!seat) return;
 
-        const response = await fetch(`/api/admin/seats/${seat._id}/reset`, {
-          method: "POST",
-        });
-
-        if (!response.ok) throw new Error("Failed to reset seat");
-
+        await resetSeatMutation.mutateAsync(seat._id);
         toast.success("Reset ghế thành công");
-        fetchSeats();
       } catch (error) {
         console.error("Reset seat error:", error);
         toast.error("Reset ghế thất bại");
-      } finally {
-        setSaving(false);
       }
     },
-    [seats.left, seats.right, fetchSeats],
+    [seatsData, resetSeatMutation],
   );
 
   // Memoized handlers for UI interactions
@@ -304,12 +315,6 @@ export default function SeatMapManagement() {
     }
   }, [editingSeat?.seatId, resetSeat]);
 
-  // Memoize selected seats Set for O(1) lookup performance
-  const selectedSeatsSet = useMemo(
-    () => new Set(selectedSeats),
-    [selectedSeats],
-  );
-
   // Memoized function to check if seat is selected
   const isSeatSelected = useCallback(
     (seatId: string) => {
@@ -342,21 +347,19 @@ export default function SeatMapManagement() {
           <h1 className="text-3xl font-bold text-gray-900">Sơ đồ chỗ ngồi</h1>
           <p className="mt-1 text-gray-600">Quản lý ghế ngồi và sơ đồ rạp</p>
         </div>
-        <Button onClick={fetchSeats} disabled={loading}>
+        <Button onClick={() => refetchSeats()} disabled={loading}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Làm mới
         </Button>
       </div>
 
-      {/* Message */}
-      {message && (
-        <Alert variant={message.type === "error" ? "destructive" : "default"}>
-          {message.type === "success" ? (
-            <CheckCircle className="h-4 w-4" />
-          ) : (
-            <AlertTriangle className="h-4 w-4" />
-          )}
-          <AlertDescription>{message.text}</AlertDescription>
+      {/* Error handling */}
+      {seatsError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Lỗi tải dữ liệu ghế: {seatsError.message}
+          </AlertDescription>
         </Alert>
       )}
 
@@ -517,7 +520,7 @@ export default function SeatMapManagement() {
               <Button
                 variant="destructive"
                 onClick={handleResetFromDialog}
-                disabled={saving}
+                disabled={resetSeatMutation.isPending}
               >
                 <RefreshCw className="h-4 w-4" />
                 Reset ghế
@@ -527,7 +530,10 @@ export default function SeatMapManagement() {
                 <Button variant="outline" onClick={handleCloseEditDialog}>
                   Hủy
                 </Button>
-                <Button onClick={saveEditSeat} disabled={saving}>
+                <Button
+                  onClick={saveEditSeat}
+                  disabled={updateSeatMutation.isPending}
+                >
                   <Save className="h-4 w-4" />
                   Lưu
                 </Button>
@@ -551,7 +557,10 @@ export default function SeatMapManagement() {
             <Button variant="outline" onClick={handleCloseBulkDialog}>
               Hủy
             </Button>
-            <Button onClick={handleBulkAction} disabled={saving}>
+            <Button
+              onClick={handleBulkAction}
+              disabled={bulkUpdateMutation.isPending}
+            >
               Xác nhận
             </Button>
           </DialogFooter>

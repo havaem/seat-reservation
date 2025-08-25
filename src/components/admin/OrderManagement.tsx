@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { OrderDoc } from "@/models/Order";
 import { formatDate } from "@/utils/formatDate";
 import {
   Check,
@@ -19,7 +18,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import useDebounce from "@/hooks/useDebounce";
 import {
   Select,
@@ -36,8 +35,15 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { useAdminOrders, useUpdateOrderStatus } from "@/hooks/useAdmin";
+import { toast } from "sonner";
+import { useEffect } from "react";
+import { AdminOrdersData } from "@/lib/api";
+
+type OrderType = AdminOrdersData["orders"][0];
+
 interface OrdersResponse {
-  orders: OrderDoc[];
+  orders: OrderType[];
   pagination: {
     page: number;
     limit: number;
@@ -49,82 +55,58 @@ interface OrdersResponse {
 }
 
 export default function OrderManagement() {
-  const [orders, setOrders] = useState<OrderDoc[]>([]);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0,
-    hasNext: false,
-    hasPrev: false,
-  });
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedOrder, setSelectedOrder] = useState<OrderDoc | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderType | null>(null);
   const [reviewNote, setReviewNote] = useState("");
 
   // Debounce search để giảm bớt gọi API
   const debouncedSearch = useDebounce(search, 500);
 
+  // Query filters
+  const filters = {
+    page,
+    limit: 10,
+    search: debouncedSearch,
+    status: statusFilter === "all" ? undefined : statusFilter,
+  };
+
+  // Use TanStack Query hooks
+  const { orders, pagination, loading, error, refetch, isFetching } =
+    useAdminOrders(filters);
+  const updateOrderMutation = useUpdateOrderStatus();
+
   // Reset về trang 1 khi search hoặc filter thay đổi
   useEffect(() => {
-    if (pagination.page !== 1) {
-      setPagination((prev) => ({ ...prev, page: 1 }));
+    if (page !== 1) {
+      setPage(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, statusFilter]);
-
-  useEffect(() => {
-    fetchOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, debouncedSearch, statusFilter]);
-
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-        ...(debouncedSearch && { search: debouncedSearch }),
-        ...(statusFilter !== "all" && { status: statusFilter }),
-      });
-
-      const response = await fetch(`/api/admin/orders?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch orders");
-
-      const data: OrdersResponse = await response.json();
-      setOrders(data.orders);
-      setPagination(data.pagination);
-    } catch (error) {
-      console.error("Fetch orders error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleOrderAction = async (
     orderId: string,
     action: "approve" | "reject",
   ) => {
     try {
-      setActionLoading(orderId);
-      const response = await fetch("/api/admin/orders", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, action, reviewNote }),
+      await updateOrderMutation.mutateAsync({
+        orderId,
+        action,
+        reviewNote: reviewNote.trim() || undefined,
       });
 
-      if (!response.ok) throw new Error("Failed to update order");
+      toast.success(
+        action === "approve"
+          ? "Đã duyệt đơn hàng thành công"
+          : "Đã từ chối đơn hàng thành công",
+      );
 
-      await fetchOrders(); // Refresh list
       setSelectedOrder(null);
       setReviewNote("");
     } catch (error) {
       console.error("Order action error:", error);
-    } finally {
-      setActionLoading(null);
+      toast.error("Có lỗi xảy ra khi cập nhật đơn hàng");
     }
   };
 
@@ -179,7 +161,7 @@ export default function OrderManagement() {
           <h1 className="text-3xl font-bold text-gray-900">Quản lý đơn hàng</h1>
           <p className="mt-1 text-gray-600">Xem và xử lý các đơn đặt vé</p>
         </div>
-        <Button onClick={fetchOrders} disabled={loading}>
+        <Button onClick={() => refetch()} disabled={loading || isFetching}>
           <RefreshCw
             className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
           />
@@ -226,7 +208,7 @@ export default function OrderManagement() {
             <div className="flex items-center text-sm text-gray-600">
               Tổng:{" "}
               <span className="ml-1 font-medium">
-                {pagination.total} đơn hàng
+                {pagination?.total || 0} đơn hàng
               </span>
             </div>
           </div>
@@ -316,9 +298,9 @@ export default function OrderManagement() {
                                 onClick={() =>
                                   handleOrderAction(order._id, "approve")
                                 }
-                                disabled={actionLoading === order._id}
+                                disabled={updateOrderMutation.isPending}
                               >
-                                {actionLoading === order._id ? (
+                                {updateOrderMutation.isPending ? (
                                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                                 ) : (
                                   <Check className="h-4 w-4" />
@@ -330,9 +312,9 @@ export default function OrderManagement() {
                                 onClick={() =>
                                   handleOrderAction(order._id, "reject")
                                 }
-                                disabled={actionLoading === order._id}
+                                disabled={updateOrderMutation.isPending}
                               >
-                                {actionLoading === order._id ? (
+                                {updateOrderMutation.isPending ? (
                                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                                 ) : (
                                   <X className="h-4 w-4" />
@@ -349,30 +331,26 @@ export default function OrderManagement() {
           )}
 
           {/* Pagination */}
-          {pagination.totalPages > 1 && (
+          {pagination && pagination.totalPages > 1 && (
             <div className="mt-6 flex items-center justify-between border-t pt-6">
               <div className="text-sm text-gray-600">
-                Trang {pagination.page} / {pagination.totalPages}(
+                Trang {pagination.page} / {pagination.totalPages} (
                 {pagination.total} đơn hàng)
               </div>
               <div className="flex space-x-2">
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() =>
-                    setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
-                  }
-                  disabled={!pagination.hasPrev || loading}
+                  onClick={() => setPage(page - 1)}
+                  disabled={!pagination?.hasPrev || loading}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() =>
-                    setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
-                  }
-                  disabled={!pagination.hasNext || loading}
+                  onClick={() => setPage(page + 1)}
+                  disabled={!pagination?.hasNext || loading}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -384,7 +362,7 @@ export default function OrderManagement() {
 
       {/* Order Detail Modal */}
       {selectedOrder && (
-        <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-4">
+        <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white">
             <div className="p-6">
               <div className="mb-6 flex items-start justify-between">
@@ -432,6 +410,17 @@ export default function OrderManagement() {
                         <strong>Email:</strong> {selectedOrder.buyer.email}
                       </p>
                     )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Nội dung chuyển khoản
+                  </label>
+                  <div className="mt-1 rounded bg-gray-50 p-3">
+                    <p className="font-mono font-semibold">
+                      {selectedOrder.bankContent}
+                    </p>
                   </div>
                 </div>
 
@@ -492,53 +481,52 @@ export default function OrderManagement() {
                   </div>
                 )}
 
-                {selectedOrder.status === "pending_offline" &&
-                  !isExpired(selectedOrder.expiresAt) && (
-                    <div className="border-t pt-4">
-                      <label className="mb-2 block text-sm font-medium text-gray-700">
-                        Ghi chú xử lý (tùy chọn)
-                      </label>
-                      <textarea
-                        value={reviewNote}
-                        onChange={(e) => setReviewNote(e.target.value)}
-                        placeholder="Nhập ghi chú cho quyết định xử lý..."
-                        className="w-full resize-none rounded-md border border-gray-300 p-3"
-                        rows={3}
-                      />
+                {selectedOrder.status === "pending_offline" && (
+                  <div className="border-t pt-4">
+                    <label className="mb-2 block text-sm font-medium text-gray-700">
+                      Ghi chú xử lý (tùy chọn)
+                    </label>
+                    <textarea
+                      value={reviewNote}
+                      onChange={(e) => setReviewNote(e.target.value)}
+                      placeholder="Nhập ghi chú cho quyết định xử lý..."
+                      className="w-full resize-none rounded-md border border-gray-300 p-3"
+                      rows={3}
+                    />
 
-                      <div className="mt-4 flex space-x-3">
-                        <Button
-                          className="flex-1 bg-green-600 hover:bg-green-700"
-                          onClick={() =>
-                            handleOrderAction(selectedOrder._id, "approve")
-                          }
-                          disabled={actionLoading === selectedOrder._id}
-                        >
-                          {actionLoading === selectedOrder._id ? (
-                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          ) : (
-                            <Check className="mr-2 h-4 w-4" />
-                          )}
-                          Duyệt đơn hàng
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          className="flex-1"
-                          onClick={() =>
-                            handleOrderAction(selectedOrder._id, "reject")
-                          }
-                          disabled={actionLoading === selectedOrder._id}
-                        >
-                          {actionLoading === selectedOrder._id ? (
-                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          ) : (
-                            <X className="mr-2 h-4 w-4" />
-                          )}
-                          Từ chối đơn hàng
-                        </Button>
-                      </div>
+                    <div className="mt-4 flex space-x-3">
+                      <Button
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        onClick={() =>
+                          handleOrderAction(selectedOrder._id, "approve")
+                        }
+                        disabled={updateOrderMutation.isPending}
+                      >
+                        {updateOrderMutation.isPending ? (
+                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        ) : (
+                          <Check className="mr-2 h-4 w-4" />
+                        )}
+                        Duyệt đơn hàng
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className="flex-1"
+                        onClick={() =>
+                          handleOrderAction(selectedOrder._id, "reject")
+                        }
+                        disabled={updateOrderMutation.isPending}
+                      >
+                        {updateOrderMutation.isPending ? (
+                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        ) : (
+                          <X className="mr-2 h-4 w-4" />
+                        )}
+                        Từ chối đơn hàng
+                      </Button>
                     </div>
-                  )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
