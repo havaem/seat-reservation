@@ -41,18 +41,6 @@ import {
 
 type OrderType = AdminOrdersData["orders"][0];
 
-interface OrdersResponse {
-  orders: OrderType[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-}
-
 export default function OrderManagement() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -72,7 +60,7 @@ export default function OrderManagement() {
   };
 
   // Use TanStack Query hooks
-  const { orders, pagination, loading, error, refetch, isFetching } =
+  const { orders, pagination, loading, refetch, isFetching } =
     useAdminOrders(filters);
   const updateOrderMutation = useUpdateOrderStatus();
 

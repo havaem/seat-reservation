@@ -65,6 +65,7 @@ async function maybePersist({
       response: payload,
     });
   } catch (err) {
+    console.log("Idempotency store failed:", err);
     // Ignore duplicate insert races etc.
   }
 }

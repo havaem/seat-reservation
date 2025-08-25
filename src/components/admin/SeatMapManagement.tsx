@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  useAdminSeatsStats,
   useBulkUpdateSeats,
   useResetSeat,
   useUpdateSeatStatus,
@@ -32,12 +31,6 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Edit, RefreshCw, Save } from "lucide-react";
 import React, { memo, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-
-interface PricingTier {
-  code: string;
-  name: string;
-  price: number;
-}
 
 interface SeatDoc {
   _id: string;
@@ -152,12 +145,6 @@ export default function SeatMapManagement() {
     refetchInterval: 30 * 1000, // Refetch every 30 seconds for real-time updates
   });
 
-  const {
-    stats,
-    loading: statsLoading,
-    refetch: refetchStats,
-  } = useAdminSeatsStats();
-
   // Mutations
   const bulkUpdateMutation = useBulkUpdateSeats();
   const updateSeatMutation = useUpdateSeatStatus();
@@ -185,9 +172,6 @@ export default function SeatMapManagement() {
     () => new Set(selectedSeats),
     [selectedSeats],
   );
-
-  // Message state for backwards compatibility (replaced with toast)
-  const message = null;
 
   // Memoized seat selection handler
   const handleSeatSelect = useCallback((seatId: string) => {
